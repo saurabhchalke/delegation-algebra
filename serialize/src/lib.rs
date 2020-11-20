@@ -16,6 +16,8 @@ use ark_std::{
     borrow::{Cow, ToOwned},
     collections::BTreeMap,
     convert::TryFrom,
+    ops::Deref,
+    rc::Rc,
     vec::Vec,
 };
 pub use error::*;
@@ -443,6 +445,35 @@ where
         Ok(Cow::Owned(<T as ToOwned>::Owned::deserialize_uncompressed(
             reader,
         )?))
+    }
+}
+
+impl<T: CanonicalSerialize> CanonicalSerialize for Rc<T> {
+    #[inline]
+    fn serialize<W: Write>(&self, writer: W) -> Result<(), SerializationError> {
+        self.deref().serialize(writer)
+    }
+
+    #[inline]
+    fn serialized_size(&self) -> usize {
+        self.deref().serialized_size()
+    }
+
+    #[inline]
+    fn serialize_uncompressed<W: Write>(&self, writer: W) -> Result<(), SerializationError> {
+        self.deref().serialize_uncompressed(writer)
+    }
+}
+
+impl<T: CanonicalDeserialize> CanonicalDeserialize for Rc<T> {
+    #[inline]
+    fn deserialize<R: Read>(reader: R) -> Result<Self, SerializationError> {
+        Ok(Rc::new(T::deserialize(reader)?))
+    }
+
+    #[inline]
+    fn deserialize_uncompressed<R: Read>(reader: R) -> Result<Self, SerializationError> {
+        Ok(Rc::new(T::deserialize_uncompressed(reader)?))
     }
 }
 
